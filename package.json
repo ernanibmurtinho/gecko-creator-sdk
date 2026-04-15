@@ -13,8 +13,18 @@
     "react-dom": ">=18"
   },
   "devDependencies": {
+    "@types/react": "^19.2.14",
+    "react": "^19.2.5",
     "typescript": "^5"
   },
-  "keywords": ["solana", "creator", "campaign", "escrow", "oracle", "vault", "sdk"],
+  "keywords": [
+    "solana",
+    "creator",
+    "campaign",
+    "escrow",
+    "oracle",
+    "vault",
+    "sdk"
+  ],
   "license": "MIT"
 }
