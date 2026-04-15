@@ -22,7 +22,7 @@ export interface GeckoVaultProps {
   partnerSlug: string
   brandWallet: string
   creatorWallet: string
-  amount: number | string
+  amount: string   // USDC amount as string with 6 decimals (e.g. "10000000" = 10 USDC)
   oracleSource?: string
   onSuccess?: (result: VaultResult) => void
   onError?: (error: Error) => void

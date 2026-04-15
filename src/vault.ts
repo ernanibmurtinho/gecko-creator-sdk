@@ -13,8 +13,14 @@ export async function createVault(
     body: JSON.stringify(params),
   })
   if (!res.ok) {
-    const err = await res.json() as { error: string }
-    throw new Error(err.error ?? "Failed to build vault transaction")
+    let message = "Failed to build vault transaction"
+    try {
+      const err = await res.json() as { error?: string }
+      if (err.error) message = err.error
+    } catch {
+      // non-JSON body (gateway error, etc.) — keep default message
+    }
+    throw new Error(message)
   }
   return res.json() as Promise<{ transaction: string; campaignId: string }>
 }
