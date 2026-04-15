@@ -1,0 +1,20 @@
+{
+  "name": "@gecko/sdk",
+  "version": "0.1.0",
+  "description": "Oracle-enforced campaign settlement SDK — embed Gecko vaults in any platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  },
+  "keywords": ["solana", "creator", "campaign", "escrow", "oracle", "vault", "sdk"],
+  "license": "MIT"
+}
