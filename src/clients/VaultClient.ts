@@ -18,6 +18,14 @@ export interface AddCreatorParams {
   allocationBps: number;
 }
 
+export interface AddCreatorsParams {
+  vaultAddress: string;
+  sponsorAddress: string;
+  campaignId: number;
+  creators: { address: string; allocationBps: number }[];
+  mintAddress?: string;
+}
+
 export class VaultClient {
   constructor(
     private readonly http: HttpClient,
@@ -44,6 +52,32 @@ export class VaultClient {
     const serialized = await this.http.buildTx("/vaults/creators/add", params);
     const signature = await this.sender.send(serialized);
     return { signature };
+  }
+
+  /** Add up to 5 creators per tx. For >5, splits into sequential batch calls. */
+  async addCreators(
+    params: AddCreatorsParams,
+  ): Promise<{ signatures: string[] }> {
+    const { vaultAddress, sponsorAddress, campaignId, creators, mintAddress } = params;
+    const signatures: string[] = [];
+    const BATCH_SIZE = 5;
+
+    for (let i = 0; i < creators.length; i += BATCH_SIZE) {
+      const chunk = creators.slice(i, i + BATCH_SIZE);
+      const serialized = await this.http.buildTx(`/vaults/${vaultAddress}/creators/batch`, {
+        sponsorAddress,
+        campaignId,
+        creators: chunk.map((c) => ({
+          creatorAddress: c.address,
+          allocationBps: c.allocationBps,
+        })),
+        mintAddress,
+      });
+      const sig = await this.sender.send(serialized);
+      signatures.push(sig);
+    }
+
+    return { signatures };
   }
 
   /** Fetch on-chain vault state. Returns null if vault does not exist. */

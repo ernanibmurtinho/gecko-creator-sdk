@@ -9,10 +9,10 @@ jest.mock("../core/HttpClient");
 jest.mock("../core/TransactionSender");
 
 import { VaultClient } from "../clients/VaultClient";
-import { MilestoneClient } from "../clients/MilestoneClient";
+import { HttpClient } from "../core/HttpClient";
 
 const MockVaultClient = VaultClient as jest.MockedClass<typeof VaultClient>;
-const MockMilestoneClient = MilestoneClient as jest.MockedClass<typeof MilestoneClient>;
+const MockHttpClient = HttpClient as jest.MockedClass<typeof HttpClient>;
 
 describe("GeckoSDK.createCampaign", () => {
   const keypair = Keypair.generate();
@@ -32,15 +32,13 @@ describe("GeckoSDK.createCampaign", () => {
       vaultAddress: "vaultABC",
       campaignId: 123,
     });
-    (MockVaultClient.prototype.addCreator as jest.Mock).mockResolvedValue({
-      signature: "addCreatorSig",
+    (MockVaultClient.prototype.addCreators as jest.Mock).mockResolvedValue({
+      signatures: ["addCreatorsSig"],
     });
 
-    // Mock milestone client
-    (MockMilestoneClient.prototype.triggerAutomation as jest.Mock).mockResolvedValue({
-      createSig: "createSig",
-      releaseSig: "releaseSig",
-    });
+    // Mock http.post for set-live call
+    const mockHttpInstance = (MockHttpClient as jest.MockedClass<typeof HttpClient>).mock.instances[0] as jest.Mocked<HttpClient>;
+    mockHttpInstance.post.mockResolvedValue({ success: true, results: [] });
   });
 
   it("returns vaultAddress, campaignId, and all signatures", async () => {
@@ -56,7 +54,7 @@ describe("GeckoSDK.createCampaign", () => {
     expect(result.vaultAddress).toBe("vaultABC");
     expect(result.campaignId).toBe(123);
     expect(result.signatures).toContain("initSig");
-    expect(result.signatures).toContain("addCreatorSig");
+    expect(result.signatures).toContain("addCreatorsSig");
   });
 
   it("skips advance payment when advancePayment=false", async () => {
@@ -69,6 +67,9 @@ describe("GeckoSDK.createCampaign", () => {
       advancePayment: false,
     });
 
-    expect(MockMilestoneClient.prototype.triggerAutomation).not.toHaveBeenCalled();
+    expect(MockVaultClient.prototype.addCreators).toHaveBeenCalled();
+    // Verify set-live was NOT called
+    const mockHttpInstance = (MockHttpClient as jest.MockedClass<typeof HttpClient>).mock.instances[0] as jest.Mocked<HttpClient>;
+    expect(mockHttpInstance.post).not.toHaveBeenCalledWith(expect.stringContaining("set-live"), expect.anything());
   });
 });

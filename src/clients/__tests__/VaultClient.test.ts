@@ -49,4 +49,27 @@ describe("VaultClient", () => {
 
     expect(result.signature).toBe("sig456");
   });
+
+  it("addCreators calls /vaults/:id/creators/batch and returns signatures", async () => {
+    mockHttp.buildTx.mockResolvedValueOnce({ transaction: "base64tx", meta: { vault: "abc", creatorCount: "2" } });
+    mockSender.send.mockResolvedValueOnce("batchSig");
+
+    const result = await client.addCreators({
+      vaultAddress: "abc",
+      sponsorAddress: "Hxv5FUM5gFGWBzMnhbqs7rTd7XEaFBYbBuT7mFNuP9cB",
+      campaignId: 123,
+      creators: [
+        { address: "Creator1111111111111111111111111111111111111", allocationBps: 5000 },
+        { address: "Creator2222222222222222222222222222222222222", allocationBps: 5000 },
+      ],
+    });
+
+    expect(mockHttp.buildTx).toHaveBeenCalledWith(
+      "/vaults/abc/creators/batch",
+      expect.objectContaining({
+        creators: expect.arrayContaining([expect.objectContaining({ allocationBps: 5000 })]),
+      }),
+    );
+    expect(result.signatures).toContain("batchSig");
+  });
 });

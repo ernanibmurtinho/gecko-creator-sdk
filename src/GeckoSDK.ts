@@ -37,7 +37,7 @@ export class GeckoSDK {
   readonly creator: CreatorClient;
   readonly milestone: MilestoneClient;
 
-  private readonly http: HttpClient;
+  protected readonly http: HttpClient;
   private readonly sender: TransactionSender;
 
   constructor(private readonly config: GeckoConfig) {
@@ -100,29 +100,23 @@ export class GeckoSDK {
     });
     signatures.push(initSig);
 
-    // Step 2: add each creator (1 tx per creator — batch in Sprint 2)
-    for (const creator of creators) {
-      const { signature: addSig } = await this.vault.addCreator({
+    // Step 2: add all creators in one batch tx (up to 5 per tx, chunked automatically)
+    const { signatures: addSigs } = await this.vault.addCreators({
+      vaultAddress,
+      sponsorAddress,
+      campaignId,
+      creators,
+      mintAddress,
+    });
+    signatures.push(...addSigs);
+
+    // Step 3: set campaign live — automation fires advance payment + campaign.started webhook
+    if (advancePayment) {
+      await this.http.post(`/vaults/${vaultAddress}/set-live`, {
         sponsorAddress,
         campaignId,
-        creatorAddress: creator.address,
-        allocationBps: creator.allocationBps,
+        mintAddress,
       });
-      signatures.push(addSig);
-    }
-
-    // Step 3: trigger advance payment via Gecko automation (no partner signature)
-    if (advancePayment) {
-      for (const creator of creators) {
-        await this.milestone.triggerAutomation({
-          vaultAddress,
-          sponsorAddress,
-          campaignId,
-          creatorAddress: creator.address,
-          payoutBps: 1000,
-          mintAddress,
-        });
-      }
     }
 
     return { vaultAddress, campaignId, signatures };
